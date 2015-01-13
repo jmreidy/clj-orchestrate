@@ -1,14 +1,12 @@
 # clj-orchestrate
 
-A Clojure library designed to ... well, that part is up to you.
+An idiomatic Clojure wrapper of the Orchestrate.io Java client.
 
 ## Usage
 
-FIXME
 
 ## License
 
-Copyright © 2015 FIXME
+Copyright © 2015 Justin Reidy
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Distributed under the Eclipse Public License either version 1.0 or any later version.
