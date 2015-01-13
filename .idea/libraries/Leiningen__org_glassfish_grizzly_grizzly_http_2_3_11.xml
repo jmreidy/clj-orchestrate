@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: org.glassfish.grizzly/grizzly-http:2.3.11">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/grizzly/grizzly-http/2.3.11/grizzly-http-2.3.11.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

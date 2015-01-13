@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Leiningen: io.orchestrate/orchestrate-client:0.7.0">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/io/orchestrate/orchestrate-client/0.7.0/orchestrate-client-0.7.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
