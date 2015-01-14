@@ -49,7 +49,7 @@
 (defn stop-client
   "Stop a running Orchestrate client"
   [client]
-  (.stop client))
+  (.close client))
 
 (defn kv-fetch
   "Fetch a kv element using a collection name and key"
