@@ -1,6 +1,6 @@
 (ns clj-orchestrate.core
   (:import (io.orchestrate.client OrchestrateClient KvObject KvList ResponseAdapter ResponseListener KvMetadata))
-  (:require [clojure.walk :refer [keywordize-keys]]
+  (:require [clojure.walk :refer [keywordize-keys stringify-keys]]
             [clojure.core.async :refer [put! chan]]))
 
 
@@ -78,9 +78,9 @@
 (defn kv-put
   "Put or update data in a collection for a provided key"
   [client collection {:keys [key value succ-chan err-chan]}]
-  (let [handler (make-listener succ-chan err-chan)]
-    (-> client (.kv collection key) (.put value) (.on handler))
-    chan))
+  (let [handler (make-listener succ-chan err-chan)
+        value (stringify-keys value)]
+    (-> client (.kv collection key) (.put value) (.on handler))))
 
 (defn kv-delete
   "Delete an item from a collection at the provided key"
