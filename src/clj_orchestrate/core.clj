@@ -25,46 +25,67 @@
 (defmethod get-results KvMetadata [kv-meta] (kv->meta kv-meta))
 
 (defn- make-listener
-  [chan]
-  (reify
-    ResponseListener
-    (onSuccess [this res] (put! chan (get-results res)))
-    (onFailure [this err] (put! chan err))
-    ))
+  ([succ-chan]
+    (reify
+      ResponseListener
+      (onSuccess [this res] (put! succ-chan res))))
+  ([succ-chan err-chan]
+    (reify
+      ResponseListener
+      (onSuccess [this res] (put! succ-chan res))
+      (onFailure [this err] (put! err-chan err)))))
 
 (defn- kv-req
-  [query chan]
-  (let [handler (make-listener chan)]
-    (-> query (.get java.util.HashMap) (.on handler))
-    chan))
+  [query succ-chan err-chan]
+  (let [handler (make-listener succ-chan err-chan)]
+    (-> query (.get java.util.HashMap) (.on handler))))
 
 
-(defn client
+(defn new-client
   "Instantiate a new Orchestrate client"
   [api-key]
   (OrchestrateClient. api-key))
 
+(defn stop-client
+  "Stop a running Orchestrate client"
+  [client]
+  (.stop client))
+
 (defn kv-fetch
   "Fetch a kv element using a collection name and key"
-  ([client collection key] (kv-fetch client collection key (chan)))
-  ([client collection key chan] (kv-req (-> client (.kv collection key)) chan)))
+  ([client collection {:keys [key ref succ-chan err-chan]}]
+    (let [handler (make-listener succ-chan err-chan)]
+      (-> client
+          (.kv collection key)
+          (.get java.util.HashMap (if ref ref))
+          (.on handler))))
+  ([client collection key chan]
+    (kv-fetch client collection {:key key :succ-chan chan}))
+  ([client collection key succ-chan err-chan]
+    (kv-fetch client collection {:key key :succ-chan succ-chan :err-chan err-chan})))
 
 (defn kv-list
   "Fetch all kv elements for a given collection name"
-  ([client collection] (kv-list client collection (chan)))
-  ([client collection chan] (kv-req (-> client (.listCollection collection)) chan)))
+  ([client collection options]
+    (let [{:keys [limit values? succ-chan err-chan]
+           :or {limit 10 values? true}} options]
+      (kv-req (-> client
+                  (.listCollection collection)
+                  (.limit limit)
+                  (.withValues values?))
+              succ-chan err-chan))))
 
 (defn kv-put
   "Put or update data in a collection for a provided key"
-  [client collection key value]
-  (let [chan (chan)
-        handler (make-listener chan)]
+  [client collection {:keys [key value succ-chan err-chan]}]
+  (let [handler (make-listener succ-chan err-chan)]
     (-> client (.kv collection key) (.put value) (.on handler))
     chan))
 
 (defn kv-delete
   "Delete an item from a collection at the provided key"
-  [client collection key]
-  (let [chan (chan)
-        handler (make-listener chan)]
-    (-> client (.kv collection key) (.delete))))
+  ([client collection key & chans]
+    (let [succ-chan (first chans)
+          err-chan (next chans)
+          handler (make-listener succ-chan err-chan)]
+      (-> client (.kv collection key) (.delete)))))
