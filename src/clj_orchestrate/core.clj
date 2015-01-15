@@ -97,4 +97,4 @@
     (let [succ-chan (first chans)
           err-chan (next chans)
           handler (make-listener succ-chan err-chan)]
-      (-> client (.kv collection key) (.delete)))))
+      (-> client (.kv collection key) (.delete) (.on handler)))))
