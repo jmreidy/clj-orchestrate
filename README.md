@@ -66,32 +66,51 @@ It's easy to list all data from a collection.
 ```clojure
 (orch/kv-list client "collection" {:limit 10 :values? true :succ-chan sc :err-chan ec })
  ```
- 
+
  The query function defaults to a limit of 10, and supports paging up to 100 objects. `values?`
  corresponds to the underlying Java `withValues` option, which specifies whether the list
  of KV objects should be populated with the Object values. It defaults to true.
- 
+
  The error channel is not required but is strongly recommended.
- 
+
  ###Storing Data
- 
+
  Adding or updating KV Objects are both accomplished with the same operation.
- 
+
  ```clojure
  (orch/kv-put client "collection" {:key "key" :value {:foo "bar"} :succ-chan sc :err-chan ec})
 ```
-  
-Hashes with `:keyword` keys are intelligently converted to string keys. 
+
+Hashes with `:keyword` keys are intelligently converted to string keys.
 The error channel is not required but is strongly recommended.
 
 ####Conditional Store
-Not yet implemented
+For conditional updates, you can check to make sure that you're updating a specific ref with `match-ref`.
+The following code will only update the value at "key" if the object has the matching "ref".
+
+ ```clojure
+ (orch/kv-put client "collection" {:key "key" :value {:foo "bar"} :match-ref "ref" :succ-chan sc :err-chan ec})
+```
+
+Likewise, it's possible to limit a put operation to creation rather than update with 
+`only-if-absent?`
+
+
+ ```clojure
+ (orch/kv-put client "collection" {:key "key" :value {:foo "bar"} :only-if-absent? true :succ-chan sc :err-chan ec})
+```
+
+
 
 ####Store with Server-generated Keys
 Not yet implemented
 
-####Patch/Partial Updates
-Not yet implemented
+###Patch/Partial Updates
+In addition to `put`-ing full JSON values, it's also possible to apply partial updates
+ by using a JSON patch format. Unlike the Java client, which uses a builder to programtically
+ construct the patch, the Clojure client expects the user to supply the patch as a hashmap. Please
+ see [the Orchestrate reference](https://orchestrate.io/docs/apiref#keyvalue-patch) for details
+ on what keys can be supplied.
 
 ###Deleting Data
 A KV object can be deleted from a collection by providing its keys. Note
