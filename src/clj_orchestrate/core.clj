@@ -24,6 +24,15 @@
 (defmethod get-results KvObject [kv-result] (kv->map kv-result))
 (defmethod get-results KvMetadata [kv-meta] (kv->meta kv-meta))
 
+(defmulti get-results-with-meta class)
+
+(defmethod get-results-with-meta KvList [kv-results]
+  (map (fn [r] {:data (kv->map r) :meta (kv->meta r)}) 
+       (.getResults kv-results)))
+
+(defmethod get-results-with-meta KvObject [kv-result]
+  {:data (kv->map kv-result) :meta (kv->meta kv-result)})
+
 (defn- make-listener
   ([succ-chan]
     (reify
