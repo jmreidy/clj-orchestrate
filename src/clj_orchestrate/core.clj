@@ -66,7 +66,7 @@
     (let [handler (make-listener succ-chan err-chan)]
       (-> client
           (.kv collection key)
-          (.get java.util.HashMap (if ref ref))
+          (.get java.util.HashMap ref)
           (.on handler))))
   ([client collection key chan]
     (kv-fetch client collection {:key key :succ-chan chan}))
