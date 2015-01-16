@@ -1,7 +1,8 @@
 # clj-orchestrate
 
-An idiomatic Clojure wrapper of the Orchestrate.io Java client. This client makes use
+An (unofficial) idiomatic Clojure wrapper of the Orchestrate.io Java client. This client makes use
 of core.async channels to provide non-blocking access to your Orchestrate collections.
+
 
 ## Usage
 
@@ -234,8 +235,10 @@ To delete an element entirely from the KV store, pass a `:purge? true` option to
 ```
 
 ###Search
+Not yet implemented
 
 ###Events
+Not yet implemented
 
 ###Relations/Graph
 
