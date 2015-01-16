@@ -36,6 +36,24 @@ Not implemented yet
 (orch/stop-client client)
 ```
 
+###Handling results
+Java result objects are passed back from the Java client to the success and error channels.
+While it's possble that you may want to work with these Java objects directly, a number
+of helper methods have been provided that allow for the user of the clj-orchestrate client
+to work with pure Clojure data structures. There's two transforming functions of note, both
+located in the `core` namespace:
+
+* `get-results` will return a hashmap or lazy seq of hashmaps, depending on the query type
+
+* `get-results-with-meta` will return a hashmap (or list of hashmaps) with two keys, `:data` 
+and `:meta`. The `:data` value is the actual result value, which the `:meta` value is a map
+of object metadata - the collection, key, and ref of that object.
+
+Creation operations return metadata with no value, and delete operations return booleans without
+metadata at all. In these cases, `get-results` will return the metadata map or a boolean (respectively),
+while `get-results-with-meta` will return an object with an nil `:data` value (for metadata only)
+or an empty `:meta` value (for booleans).
+
 ###Fetch data
 
 There's multiple ways to query for Key-Value data within a given Orchestrate
