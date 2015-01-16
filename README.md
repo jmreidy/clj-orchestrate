@@ -36,6 +36,13 @@ Not implemented yet
 (orch/stop-client client)
 ```
 
+###Channels
+The underlying Orchestrate Java client makes every request in the form of a Future, and provides
+a callback-based solution for processing results and errors. Instead of using callbacks
+or relying on the derefing of futures, clj-orchestrate functions all take two channels - a success
+channel and an error channel. In all cases, Orchestrate calls will be performed in a non-blocking
+manner, with the result (or error) passed to the supplied channels.
+
 ###Handling results
 Java result objects are passed back from the Java client to the success and error channels.
 While it's possble that you may want to work with these Java objects directly, a number
@@ -53,6 +60,14 @@ Creation operations return metadata with no value, and delete operations return 
 metadata at all. In these cases, `get-results` will return the metadata map or a boolean (respectively),
 while `get-results-with-meta` will return an object with an nil `:data` value (for metadata only)
 or an empty `:meta` value (for booleans).
+
+These helper functions can be especially helpful when supplied as a transducer when creating
+a channel, as in the following:
+
+```clojure
+(def succ-chan (chan 1 (map get-results-with-meta))
+```
+
 
 ###Fetch data
 
