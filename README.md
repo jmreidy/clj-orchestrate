@@ -6,6 +6,7 @@ of core.async channels to provide non-blocking access to your Orchestrate collec
 ## Usage
 
 ###Add a dependency
+
 Add the necessary dependency to your Leiningen `project.clj`, and require as normal.
 
 ```clojure
@@ -16,6 +17,7 @@ Add the necessary dependency to your Leiningen `project.clj`, and require as nor
 Further, KeyValue operations are located in the `clj-orchestrate.kv` namespace.
 
 ###Construct a client
+
 A new instance of the Java library's `OrchestrateClient` is easily
 created by supplying your API key to the `new-client` function.
 
@@ -76,7 +78,8 @@ It's easy to list all data from a collection.
 
  The error channel is not required but is strongly recommended.
 
- ###Storing Data
+
+###Storing Data 
 
  Adding or updating KV Objects are both accomplished with the same operation.
 
@@ -88,6 +91,7 @@ Hashes with `:keyword` keys are intelligently converted to string keys.
 The error channel is not required but is strongly recommended.
 
 ####Conditional Store
+
 For conditional updates, you can check to make sure that you're updating a specific ref with `match-ref`.
 The following code will only update the value at "key" if the object has the matching "ref".
 
@@ -104,6 +108,7 @@ Likewise, it's possible to limit a put operation to creation rather than update 
 ```
 
 ####Store with Server-generated Keys
+
 When creating a new KV record, you will frequently want to use a server-generated key rather than your 
 own (e.g. surrogate versus natural keys). There's a seperate updating function that allows for
 this action:
@@ -116,13 +121,13 @@ The keys of the value object are stringified, as with the other data update oper
 The key (and ref) of the newly created object are available as a result of the call.
 
 
-
 ###Patch/Partial Updates
+
 In addition to `put`-ing full JSON values, it's also possible to apply partial updates
- by using a JSON patch format. Unlike the Java client, which uses a builder to programtically
- construct the patch, the Clojure client expects the user to supply the patch as a vector of hashmaps. Please
- see [the Orchestrate reference](https://orchestrate.io/docs/apiref#keyvalue-patch) for details
- on what keys can be supplied.
+by using a JSON patch format. Unlike the Java client, which uses a builder to programtically
+construct the patch, the Clojure client expects the user to supply the patch as a vector of hashmaps. Please
+see [the Orchestrate reference](https://orchestrate.io/docs/apiref#keyvalue-patch) for details
+on what keys can be supplied.
  
 ```clojure
 (kv/patch orch
@@ -132,9 +137,10 @@ In addition to `put`-ing full JSON values, it's also possible to apply partial u
           {:succ-chan sc})
  ```
  
- ####Conditional Partial Update
- As with the conditional `put` above, conditional partial updates can be specified with the 
- `match-ref` key in the options hash.
+####Conditional Partial Update
+ 
+As with the conditional `put` above, conditional partial updates can be specified with the 
+`match-ref` key in the options hash.
  
 ```clojure
 (kv/patch orch
@@ -142,11 +148,12 @@ In addition to `put`-ing full JSON values, it's also possible to apply partial u
           "key"
           [{:op "replace" :path "val" :value "v01"}]
           {:succ-chan sc :match-ref "ref"})
- ```
+```
  
- ####Test Patch
- A "test" patch is a special JSONPatch op that allows for a type of commit/rollback functionality,
- based on the results of a value test. The `test` op is specified in a patch like any other op.
+####Test Patch
+ 
+A "test" patch is a special JSONPatch op that allows for a type of commit/rollback functionality,
+based on the results of a value test. The `test` op is specified in a patch like any other op.
  
 ```clojure
 (kv/patch orch
@@ -157,18 +164,17 @@ In addition to `put`-ing full JSON values, it's also possible to apply partial u
           {:succ-chan sc})
  ```
  
- ###Merge Update
+###Merge Update
  
- *Note: This appears to currently be broken in the Java client.*
+*Note: This appears to currently be broken in the Java client.*
  
- The final type of KV Update operation is a "merge" update, which relies on the format of
- a [JsonMergePatch](https://tools.ietf.org/html/rfc7386). 
+The final type of KV Update operation is a "merge" update, which relies on the format of
+a [JsonMergePatch](https://tools.ietf.org/html/rfc7386). 
  
  ```clojure
 (kv/merge client "collection" "key" {:v "val05"} {:succ-chan sc :err-chan ec})) 
 ```
  
-
 ###Deleting Data
 A KV object can be deleted from a collection by providing its keys. Note
 that deletes by default will not permanently delete the resource (see purge below).
@@ -198,7 +204,61 @@ To delete an element entirely from the KV store, pass a `:purge? true` option to
 
 ###Events
 
-###Relations
+###Relations/Graph
+
+The Orchestrate Graph (Relations) functionality is accessed through the `clj-orchestrate.graph` 
+namespace.
+
+####List relations
+
+A graph search is performed with the `get-links` function, which is supplied with
+
+* the client connection
+* the type of relation to search against
+* the collection and key of the "source" element
+* a success channel and an error channel
+
+```clojure
+;Get Joe's parents
+(graph/get-links client "hasParent" {:collection "family" :key "Joe"} sc ec)
+```
+
+Multiple "degrees of separation" can be searched by supplying a vector of 
+relation types, instead of a single string.
+
+```clojure
+;Get Joe's aunts and uncles
+(graph/get-links client ["hasParent" "hasSibling"] {:collection "family" :key "Joe"} sc ec)
+```
+
+####Add relation
+
+Adding a relation between entities in Orchestrate is as simple as supplying the relation type,
+a source element (by collection and key), and a target element.
+
+```clojure
+(graph/link client 
+            "hasParent" 
+            {:collection "family" :key "Joe"} 
+            {:collection "family" :key "Joe's dad"} 
+            sc ec)
+```
+
+Keep in mind that relations are uni-directional. In the above example, a separate / inverse
+`hasChild` relationship may need to be created as well.
+
+####Delete relation
+Deleting relations follows the same format as adding them - define a relation type,
+supply a source by collection and key, and define a target by collection and key.
+
+```clojure
+(graph/delete client 
+              "hasParent"
+              {:collection "family" :key "Joe"} 
+              {:collection "family" :key "Joe's Dad"} 
+              sc ec)
+```
+
 
 
 ## License
