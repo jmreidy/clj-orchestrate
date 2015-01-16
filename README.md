@@ -1,6 +1,7 @@
 # clj-orchestrate
 
-An idiomatic Clojure wrapper of the Orchestrate.io Java client.
+An idiomatic Clojure wrapper of the Orchestrate.io Java client. This client makes use
+of core.async channels to provide non-blocking access to your Orchestrate collections.
 
 ## Usage
 
@@ -8,9 +9,11 @@ An idiomatic Clojure wrapper of the Orchestrate.io Java client.
 Add the necessary dependency to your Leiningen `project.clj`, and require as normal.
 
 ```clojure
-[com.rzrsharp/jmreidy "0.1.0"] ;project.clj
-(ns my-app.core (:require [rzrsharp.clj-orchestrate :as orch])) ;app file
+[jmreidy/clj-orchestrate "0.1.0"] ;project.clj
+(ns my-app.core (:require [jmreidy.clj-orchestrate :as orch])) ;app file
 ```
+
+Further, KeyValue operations are located in the `clj-orchestrate.kv` namespace.
 
 ###Construct a client
 A new instance of the Java library's `OrchestrateClient` is easily
@@ -40,14 +43,14 @@ handle the success response, and should usually also receive an error response
 channel.
 
 ```clojure
-(orch/kv-fetch client "collection" "key" succ-chan)
-(orch/kv-fetch client "collection" "key" succ-chan err-chan)
+(kv/fetch client "collection" "key" succ-chan)
+(kv/fetch client "collection" "key" succ-chan err-chan)
 ```
 
 Pro tip: Create a partially applied query for future convenience.
 
 ```clojure
-(def collection-fetch (partial orch/kv-fetch client "collection")
+(def collection-fetch (partial kv/fetch client "collection")
 (collection-fetch "key" succ-chan)
 ```
 
@@ -56,7 +59,7 @@ just your style preference, use the more verbose
 named parameter version.
 
 ```clojure
-(orch/kv-fetch client "collection" {:key "key" :ref "ref" :succ-chan chan :err-chan echan})
+(kv/fetch client "collection" {:key "key" :ref "ref" :succ-chan chan :err-chan echan})
 ```
 
 ###List Data
@@ -64,7 +67,7 @@ named parameter version.
 It's easy to list all data from a collection.
 
 ```clojure
-(orch/kv-list client "collection" {:limit 10 :values? true :succ-chan sc :err-chan ec })
+(kv/list client "collection" {:limit 10 :values? true :succ-chan sc :err-chan ec })
  ```
 
  The query function defaults to a limit of 10, and supports paging up to 100 objects. `values?`
@@ -78,7 +81,7 @@ It's easy to list all data from a collection.
  Adding or updating KV Objects are both accomplished with the same operation.
 
  ```clojure
- (orch/kv-put client "collection" {:key "key" :value {:foo "bar"} :succ-chan sc :err-chan ec})
+ (kv/put client "collection" {:key "key" :value {:foo "bar"} :succ-chan sc :err-chan ec})
 ```
 
 Hashes with `:keyword` keys are intelligently converted to string keys.
@@ -89,7 +92,7 @@ For conditional updates, you can check to make sure that you're updating a speci
 The following code will only update the value at "key" if the object has the matching "ref".
 
  ```clojure
- (orch/kv-put client "collection" {:key "key" :value {:foo "bar"} :match-ref "ref" :succ-chan sc :err-chan ec})
+ (kv/put client "collection" {:key "key" :value {:foo "bar"} :match-ref "ref" :succ-chan sc :err-chan ec})
 ```
 
 Likewise, it's possible to limit a put operation to creation rather than update with 
@@ -97,20 +100,74 @@ Likewise, it's possible to limit a put operation to creation rather than update 
 
 
  ```clojure
- (orch/kv-put client "collection" {:key "key" :value {:foo "bar"} :only-if-absent? true :succ-chan sc :err-chan ec})
+ (kv/put client "collection" {:key "key" :value {:foo "bar"} :only-if-absent? true :succ-chan sc :err-chan ec})
 ```
 
-
-
 ####Store with Server-generated Keys
-Not yet implemented
+When creating a new KV record, you will frequently want to use a server-generated key rather than your 
+own (e.g. surrogate versus natural keys). There's a seperate updating function that allows for
+this action:
+
+```clojure
+(kv/post client "test" {:value "test"} success-chan error-chan)
+```
+
+The keys of the value object are stringified, as with the other data update operations.
+The key (and ref) of the newly created object are available as a result of the call.
+
+
 
 ###Patch/Partial Updates
 In addition to `put`-ing full JSON values, it's also possible to apply partial updates
  by using a JSON patch format. Unlike the Java client, which uses a builder to programtically
- construct the patch, the Clojure client expects the user to supply the patch as a hashmap. Please
+ construct the patch, the Clojure client expects the user to supply the patch as a vector of hashmaps. Please
  see [the Orchestrate reference](https://orchestrate.io/docs/apiref#keyvalue-patch) for details
  on what keys can be supplied.
+ 
+```clojure
+(kv/patch orch
+          "test"
+          "key"
+          [{:op "replace" :path "val" :value "v01"}]
+          {:succ-chan sc})
+ ```
+ 
+ ####Conditional Partial Update
+ As with the conditional `put` above, conditional partial updates can be specified with the 
+ `match-ref` key in the options hash.
+ 
+```clojure
+(kv/patch orch
+          "test"
+          "key"
+          [{:op "replace" :path "val" :value "v01"}]
+          {:succ-chan sc :match-ref "ref"})
+ ```
+ 
+ ####Test Patch
+ A "test" patch is a special JSONPatch op that allows for a type of commit/rollback functionality,
+ based on the results of a value test. The `test` op is specified in a patch like any other op.
+ 
+```clojure
+(kv/patch orch
+          "test"
+          "key"
+          [{:op "replace" :path "val" :value "v02"}
+           {:op "test" :path "val" :value "v03"]
+          {:succ-chan sc})
+ ```
+ 
+ ###Merge Update
+ 
+ *Note: This appears to currently be broken in the Java client.*
+ 
+ The final type of KV Update operation is a "merge" update, which relies on the format of
+ a [JsonMergePatch](https://tools.ietf.org/html/rfc7386). 
+ 
+ ```clojure
+(kv/merge client "collection" "key" {:v "val05"} {:succ-chan sc :err-chan ec})) 
+```
+ 
 
 ###Deleting Data
 A KV object can be deleted from a collection by providing its keys. Note
@@ -123,10 +180,25 @@ that deletes by default will not permanently delete the resource (see purge belo
 The error channel is not required but is strongly recommended.
 
 ####Conditonal Delete
-Not yet implemented
+As with other KV operations, a conditional delete can be performed by checking
+against a ref using the `:match-ref` option.
+
+```clojure
+(kv/delete client "test" {:key "key" :match-ref "ref" :succ-chan sc :err-chan ec})
+```
 
 ####Purge Delete
-Not yet implemented
+To delete an element entirely from the KV store, pass a `:purge? true` option to the delete call.
+
+```clojure
+(kv/delete client "test" {:key "key" :purge? true :succ-chan sc :err-chan ec})
+```
+
+###Search
+
+###Events
+
+###Relations
 
 
 ## License

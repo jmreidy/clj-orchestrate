@@ -8,7 +8,10 @@ pom.xml.asc
 /.lein-*
 /.nrepl-port
 
-Intellij IDEA project files
+#Scratchfiles
+/src/repl
+
+#Intellij IDEA project files
 .idea/workspace.xml
 .idea/tasks.xml
 .idea/replstate.xml
