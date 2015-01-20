@@ -1,5 +1,4 @@
 (ns clj-orchestrate.kv
-  (:import (io.orchestrate.client.jsonpatch JsonPatchOp JsonPatch))
   (:require [clj-orchestrate.core :as core :refer [make-listener]]
             [clojure.walk :refer [stringify-keys]]
             [cheshire.core :as cheshire]))

@@ -238,7 +238,150 @@ To delete an element entirely from the KV store, pass a `:purge? true` option to
 Not yet implemented
 
 ###Events
-Not yet implemented
+
+The Orchestrate Events functionality is accessed through the `clj-orchestrate.events` namespace. 
+In the Orchestrate.io service, an event is a time ordered piece of data you want to store in the context of a key.
+
+####Fetch Events (List)
+To fetch events belonging to a `key` in a specific `collection` with a particular
+event `type`, call the `events/list` function. This function will return ALL
+events for the given object of the provided type.
+
+```clojure
+(events/list client "test" {:key "key" :type "event-type" :succ-chan sc :err-chan :ec})
+```
+
+A shorthand version of this function also exists:
+
+```clojure
+(events/list client "test" "key" "event-type" sc ec)
+```
+
+It's also possible to narrow the list of events by providing a start timestamp, an
+end timestamp, or both (e.g. all events after a time, all events before a time, all
+events between a start and end time). This operation can be performed by supplying
+`start` and `end` Longs to the `list` call:
+
+```clojure
+(events/list client "test" {:key "key" 
+                            :type "event-type" 
+                            :start 1421704814680
+                            :end 1421704814690
+                            :succ-chan sc 
+                            :err-chan :ec})
+```
+
+####Fetch Event (Single)
+To get a *single* instance of an event of provided `type` belonging to an object
+with `key` in `collection`, use the `fetch` function with a specific `timestamp`
+and `ordinal`.
+
+```clojure
+(events/fetch client "test" {:key "key"
+                            :type "event-type"
+                            :timestamp 1421704814680
+                            :ordinal "07b91c5c5b084000"
+                            :succ-chan sc
+                            :err-chan :ec})
+```
+
+Note that the event fetch calls (list or single) return objects with metadata
+that specifies timestamp and ordinal values, in addition to the usual ref value.
+
+####Create Event
+Creating an event (and updating or patching an event) follows in the same style
+as create an KV object, with the main difference being the addition of an event `type`
+parameter.
+
+```clojure
+(events/create client "test" "key" "event-type" {:value "event value"} sc ec)
+```
+
+####Update an Event
+To update a specific event, you'll need the timestamp and ordinal of that event,
+just as you would need for fetching a single event.
+
+```clojure
+(events/update client "test" {:key "key"
+                              :type "event-type"
+                              :timestamp 1421704814680
+                              :ordinal "07b91c5c5b084000"
+                              :value {:value "updated value"}
+                              :succ-chan sc
+                              :err-chan ec})
+```
+
+An update can be made *conditionally* (e.g. requiring a match to a certain ref) just like
+with KV operations, by providing a `match-ref` value:
+
+
+```clojure
+(events/update client "test" {:key "key"
+                              :type "event-type"
+                              :timestamp 1421704814680
+                              :ordinal "07b91c5c5b084000"
+                              :match-ref "700f69ffab6edbdf"
+                              :value {:value "updated value"}
+                              :succ-chan sc
+                              :err-chan ec})
+```
+
+####Patch an Event
+Patching an event follows in the same format as updating an event, but instead of a wholesale
+replacement of the event value, a patch will be applied. As with the KV patch above,
+the Orchestrate JSONPatch is created by supplying a vector of maps.
+
+
+```clojure
+(events/patch client "test" {:key "key"
+                             :type "event-type"
+                             :timestamp 1421704814680
+                             :ordinal "07b91c5c5b084000"
+                             :patch [{:op "replace" :patch "value" :value "updated value"}]
+                             :succ-chan sc
+                             :err-chan ec})
+```
+
+As with other operations, a *conditional* patch is supported via the `match-ref` key.
+
+```clojure
+(events/patch client "test" {:key "key"
+                             :type "event-type"
+                             :timestamp 1421704814680
+                             :ordinal "07b91c5c5b084000"
+                             :match-ref "700f69ffab6edbdf"
+                             :patch [{:op "replace" :patch "value" :value "updated value"}]
+                             :succ-chan sc
+                             :err-chan ec})
+```
+
+####Delete an event
+Deleting an event is supported by the `events/delete` function. It follows in the style of 
+the KV delete operation, and like the other single-event functions requires both a `timestamp`
+and `ordinal` key. *Unlike* the KV delete operation, *all* event delets are treated as a purge.
+
+```clojure
+(events/delete client "test" {:key "key"
+                              :type "event-type"
+                              :timestamp 1421704814680
+                              :ordinal "07b91c5c5b084000"
+                              :value {:value "updated value"}
+                              :succ-chan sc
+                              :err-chan ec})
+```
+
+Conditional deletes are specified via the `match-ref` key:
+
+```clojure
+(events/delete client "test" {:key "key"
+                              :type "event-type"
+                              :timestamp 1421704814680
+                              :ordinal "07b91c5c5b084000"
+                              :match-ref "700f69ffab6edbdf"
+                              :value {:value "updated value"}
+                              :succ-chan sc
+                              :err-chan ec})
+```
 
 ###Relations/Graph
 
