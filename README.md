@@ -3,6 +3,17 @@
 An (unofficial) idiomatic Clojure wrapper of the Orchestrate.io Java client. This client makes use
 of core.async channels to provide non-blocking access to your Orchestrate collections.
 
+###Author's Note
+This is my first Clojure project, and as such, I'm fairly confidant that I'm doing
+lots of things wrong. To a JavaScripter's eyes, the code looks lovely; I'm sure
+it's ghastly to a Lisp-er. Along those lines, I'd be very happy to accept "constructive 
+criticism PRs" from more experienced Clojurians!
+
+Test coverage is on the way, but the wrapper has been built via REPL, so everything should
+be working correctly. If you come across any problems, please open an issue.
+
+Finally, I want to thank the team at Orchestrate for building such a fantastically
+useful service!
 
 ## Usage
 
