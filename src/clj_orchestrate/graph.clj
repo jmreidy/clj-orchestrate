@@ -1,5 +1,5 @@
 (ns clj-orchestrate.graph
-  (:require [clj-orchestrate.core :as core :refer [make-listener]]))
+  (:require [clj-orchestrate.util :as util :refer [make-listener]]))
 
 (defn link 
   [client relation source target & chans]
@@ -7,7 +7,7 @@
       (.relation (:collection source) (:key source))
       (.to (:collection target) (:key target))
       (.put relation)
-      (.on (make-listener (first chans) (next chans)))))
+      (.on (make-listener (first chans) (second chans)))))
 
 (defn get-links
   [client relations source & chans]
@@ -15,7 +15,7 @@
     (-> client
         (.relation (:collection source) (:key source))
         (.get java.util.HashMap (into-array String relations))
-        (.on (make-listener (first chans) (next chans)))
+        (.on (make-listener (first chans) (second chans)))
         )))
 
 (defn delete
@@ -24,4 +24,4 @@
       (.relation (:collection source) (:key source))
       (.to (:collection target) (:key target))
       (.purge relation)
-      (.on (make-listener (first chans) (next chans)))))
+      (.on (make-listener (first chans) (second chans)))))

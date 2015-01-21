@@ -1,6 +1,6 @@
 (ns clj-orchestrate.events
   (:import (io.orchestrate.client.jsonpatch JsonPatchOp JsonPatch))
-  (:require [clj-orchestrate.core :as core :refer [make-listener maps->patch]]
+  (:require [clj-orchestrate.util :as util :refer [make-listener maps->patch]]
             [clojure.walk :refer [stringify-keys]]
             [cheshire.core :as cheshire]))
 
@@ -30,7 +30,7 @@
           (.on handler))))
   
   ([client collection key type & chans]
-    (list client collection {:key key :type type :succ-chan (first chans) :err-chan (next chans)})))
+    (list client collection {:key key :type type :succ-chan (first chans) :err-chan (second chans)})))
 
 (defn create
   "Store an event to a key in a collection with a specific type"
@@ -40,7 +40,7 @@
           (.event collection key)
           (.type type)
           (.create payload)
-          (.on (make-listener (first chans) (next chans)))))))
+          (.on (make-listener (first chans) (second chans)))))))
 
 (defn update
   "Update an event to a new version"

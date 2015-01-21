@@ -49,7 +49,7 @@ Java result objects are passed back from the Java client to the success and erro
 While it's possble that you may want to work with these Java objects directly, a number
 of helper methods have been provided that allow for the user of the clj-orchestrate client
 to work with pure Clojure data structures. There's two transforming functions of note, both
-located in the `core` namespace:
+located in the `util` namespace:
 
 * `get-results` will return a hashmap or lazy seq of hashmaps, depending on the query type
 
@@ -235,7 +235,71 @@ To delete an element entirely from the KV store, pass a `:purge? true` option to
 ```
 
 ###Search
-Not yet implemented
+Orchestrate data is intelligently indexed by the service automatically, and made available
+for searching via 
+[Lucene-style queries](http://lucene.apache.org/core/4_3_0/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#Overview).
+Searching is exposed in the Clojure wrapper via the `search` function in the `kv` namespace.
+In its simplest form, only a collection and query is needed.
+
+```clojure
+(kv/search client "test" "*" sc ec)
+```
+
+A more complicated form is also available, allowing the specification of:
+
+* a `limit` (defaults to 10, capped at 100)
+* `offset` (defauls to 0)
+* `with-values?` to return hydrated search results (true, default) or metadata only (false)
+
+This form uses an option map:
+
+```clojure
+(kv/search client "test" {:query "*"
+                          :limit 20
+                          :offset 1
+                          :succ-chan sc
+                          :err-chan ec})
+``` 
+
+####Aggregates
+According to the Java client docs, "any query can be optionally accompanied by a 
+collection of aggregate functions, each providing a summary of the data items 
+matched by the query. There are four different kinds of aggregate functions: 
+Statistical, Range, Distance, and TimeSeries." (See the [API Reference](https://orchestrate.io/docs/apiref#aggregates).)
+
+Aggregates are supplied to the `search` function as the value of another options key: `aggregates`.
+The value should simply be a vector of hash-maps. Each map should have a `:type` and `:field`
+key. `:type` denotes the type of Aggregate function: 
+
+* A type of `:stats` will configure a Statistical aggregate.
+* A type of `:range` will configure a Range aggregate
+* A type of `:distance` will configure a Distance aggregate
+* A type of `:time` will configure a TimeSeries aggregate.
+
+Each of these aggregate functions relies on the `:field` key to denote the fieldname to be run
+against. Below, see a fully populated aggregate search query, with example configuration options
+for each type:
+
+```clojure
+(kv/search client "test" {:query "*"
+                          :succ-chan sc
+                          :err-chan ec
+                          :aggregates [{:type "range" :field "number" :ranges [[4,6]]}
+                                       {:type "stats" :field "number"}
+                                       {:type "distance" :field "location" :ranges [[0, 5]]}
+                                       {:type "time" :field "time" :interval :day}]})
+           
+```
+
+TimeSeries intervals allow for an `:interval` of `:hour`, `:day`, 
+`:week`, `:month`, `:quarter`, `:year`. `Range`s, supplied to both Distance
+and Range aggregates, are simply vectors of Doubles serving as lower and upper bounds. 
+If you would like to ignore one of these bounds, replace the Double with either
+`Double/NEGATIVE_INFINITY` or `Double/POSITIVE_INFINITY`.
+
+####Handling Search Results
+*Finishing handling of Aggregate results, the last item to be implemented before initial release.*
+
 
 ###Events
 
