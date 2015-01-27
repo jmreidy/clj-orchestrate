@@ -312,7 +312,17 @@ If you would like to ignore one of these bounds, replace the Double with either
 `Double/NEGATIVE_INFINITY` or `Double/POSITIVE_INFINITY`.
 
 ####Handling Search Results
-*Finishing handling of Aggregate results, the last item to be implemented before initial release.*
+Unlike other list operations, which simply return a seq, 
+searching returns a hashmap of `:results` and `:aggregates`.
+The `aggregates` hash containes `AggregateResults`, if any, relating to your query. Aggregate results
+are themselves maps denoting the `:type` and `:field` of the aggregate. The signature of the `:result` itself 
+depends upon the type of result:
+
+* TimeSeries results: a keyword `:interval`, and `:buckets` consisting of the `:bucket` name and `:count`
+* Range results: a list of `:buckets` counts
+* Distance results: a list of `:buckets` counts
+* Stats results: a map of `:max`, `:min`, `:mean`, `:sum`, `:stdDev`, `:sumOfSquares`, and `:variance`
+
 
 
 ###Events

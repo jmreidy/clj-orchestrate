@@ -3,7 +3,7 @@
            (io.orchestrate.client KvObject KvList ResponseListener
                                   KvMetadata RelationList
                                   EventList Event EventMetadata
-                                  SearchResults Result))
+                                  SearchResults Result TimeSeriesAggregateResult RangeAggregateResult DistanceAggregateResult StatsAggregateResult))
   (:require [clojure.walk :refer [stringify-keys]]
             [clojure.core.async :refer [put! chan]]))
 
@@ -68,6 +68,29 @@
 (defmethod get-results Result [^Result result]
   (kv->map (.getKvObject result)))
 
+(defmulti get-agg-result class)
+(defmethod get-agg-result TimeSeriesAggregateResult 
+  [^TimeSeriesAggregateResult agg]
+  {:interval (-> agg .getInterval .name clojure.string/lower-case keyword)
+   :buckets (map (fn [b] {:bucket (.getBucket b) :count (.getCount b)}) 
+                 (vec (.getBuckets agg)))})
+
+(defmethod get-agg-result RangeAggregateResult 
+  [^RangeAggregateResult agg] 
+  {:buckets (map #(.getCount %) (vec (.getBuckets agg)))})
+
+(defmethod get-agg-result DistanceAggregateResult 
+  [^DistanceAggregateResult agg]
+  {:buckets (map #(.getCount %) (vec (.getBuckets agg)))})
+
+
+(defmethod get-agg-result StatsAggregateResult 
+  [^StatsAggregateResult agg] 
+  {:max (.getMax agg) :min (.getMin agg) :mean (.getMean agg)
+   :sum (.getSum agg) :stdDev (.getStdDev agg) :sumOfSquares (.getSumOfSquares agg)
+   :variance (.getVariance agg)})
+
+
 ;Parse Metadata
 (defmulti get-meta class)
 
@@ -109,7 +132,12 @@
   (map result-mapper (.getEvents events)))
 
 (defmethod get-results-with-meta SearchResults [^SearchResults results]
-  (hash-map :results (map result-mapper (.getResults results))))
+  {:results (map result-mapper (.getResults results))
+   :aggregates (map (fn [agg]
+                      {:field (.getFieldName agg)
+                       :kind (.getAggregateKind agg)
+                       :result (get-agg-result agg)})
+                    (.getAggregates results))})
 
 (defn maps->patch
   [patch]
