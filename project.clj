@@ -7,4 +7,7 @@
   :dependencies [[org.clojure/clojure "1.7.0-alpha5"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [cheshire "5.4.0"]
-                 [io.orchestrate/orchestrate-client "0.7.0"]])
+                 [environ "1.0.0"]
+                 [io.orchestrate/orchestrate-client "0.7.0"]]
+  :plugins [[lein-environ "1.0.0"]])
+
