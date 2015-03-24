@@ -3,8 +3,7 @@
 An (unofficial) idiomatic Clojure wrapper of the Orchestrate.io Java client. This client makes use
 of core.async channels to provide non-blocking access to your Orchestrate collections.
 
-**This project is not yet published to Clojars; initial version will be published when Aggregate
-search result handling is complete. It should be done shortly!**
+[![Clojars Project](http://clojars.org/jmreidy/clj-orchestrate/latest-version.svg)](http://clojars.org/jmreidy/clj-orchestrate)
 
 ###Author's Note
 This is my first Clojure project, and as such, I'm fairly confidant that I'm doing
