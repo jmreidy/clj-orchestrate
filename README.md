@@ -4,6 +4,7 @@ An (unofficial) idiomatic Clojure wrapper of the Orchestrate.io Java client. Thi
 of core.async channels to provide non-blocking access to your Orchestrate collections.
 
 [![Clojars Project](http://clojars.org/jmreidy/clj-orchestrate/latest-version.svg)](http://clojars.org/jmreidy/clj-orchestrate)
+[![Circle CI](https://circleci.com/gh/jmreidy/clj-orchestrate.svg?style=svg)](https://circleci.com/gh/jmreidy/clj-orchestrate)
 
 ###Author's Note
 This is my first Clojure project, and as such, I'm fairly confidant that I'm doing
