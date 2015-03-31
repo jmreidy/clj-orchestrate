@@ -11,12 +11,15 @@
 
 (defn get-links
   [client relations source & chans]
-  (let [relations (if-not (vector? relations) (vector relations) relations)]
+   (let [relations (if-not (vector? relations) (vector relations) relations)
+         {:keys [collection key limit offset] :or {limit 10 offset 0}} source]
     (-> client
-        (.relation (:collection source) (:key source))
+        (.relation collection key)
+        (.limit limit)
+        (.offset offset)
         (.get java.util.HashMap (into-array String relations))
-        (.on (make-listener (first chans) (second chans)))
-        )))
+        (.on (make-listener (first chans) (second chans))))))
+
 
 (defn delete
   [client relation source target & chans]
