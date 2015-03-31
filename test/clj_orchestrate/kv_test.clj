@@ -8,33 +8,67 @@
 
 (def test-data (atom {}))
 
+(defn tchan [& [time]] (async/timeout (or time 5000)))
+
+(defn seed-data [vals]
+  (let [post-chan (async/chan)
+        res-chan (tchan)]
+    (mapv #(kv/post h/client h/col % post-chan) vals)
+    (async/go-loop [results []
+                    res (async/<! post-chan)]
+      (let [results (conj results res)]
+        (if (= (count results) (count vals))
+          (do
+            (async/close! post-chan)
+            (async/>! res-chan results))
+          (recur results (async/<! post-chan)))))
+    res-chan))
+
 (defn kv-fixtures [f]
-  (let [pc (async/chan 1 (map #(.getKey %)))
-        post-data (fn [_] (kv/post h/client h/col h/data pc))
-        dc (async/chan 1 (map post-data))]
+  (let [dc (tchan)]
     (h/delete-collection h/col dc)
-    (swap! test-data assoc :ref (async/<!! pc))
+    (async/<!! dc)
+    (reset! test-data (async/<!! (seed-data (take 10 (repeat {:foo "bar"})))))
     (f)
     (reset! test-data {})))
 
 (use-fixtures :each kv-fixtures)
 
 (deftest kv-fetch
-  (let [res-chan (async/chan)]
-    (kv/fetch h/client h/col (:ref @test-data) res-chan)
+  (let [res-chan (tchan)
+        err-chan (async/chan 1 (map println))
+        key (-> (first @test-data) (.getKey))]
+    (kv/fetch h/client h/col key res-chan err-chan)
     (let [result (async/<!! res-chan)]
-      (is (instance? io.orchestrate.client.KvObject result))
-      (is (= h/data (get-results result))))))
+      (is (instance? io.orchestrate.client.KvObject result)))))
 
 (deftest kv-list
-  (let [res-chan  (async/chan)]
+  (let [res-chan  (tchan)]
     (kv/list h/client h/col res-chan)
     (let [result (async/<!! res-chan)]
-      (is (instance? io.orchestrate.client.KvList result))
-      (is (h/in? (get-results result) h/data)))))
+      (is (instance? io.orchestrate.client.KvList result)))))
+
+(deftest kv-get-next-list
+  (testing "if a list response has no more pages"
+    (let [res-chan (tchan)
+          next-chan (tchan)]
+      (kv/list h/client h/col {:succ-chan res-chan :limit 50})
+      (let [resp (kv/get-next-list (async/<!! res-chan) next-chan)]
+        (is (= false resp) "get-next-list returns false"))))
+  (testing "if a list response has a next page"
+    (let [res-chan (tchan)
+          next-chan (tchan)
+          err-chan (async/chan 1 (map println))]
+      (kv/list h/client h/col {:succ-chan res-chan :limit 5})
+      (let [resp (kv/get-next-list (async/<!! res-chan) next-chan err-chan)
+            result (async/<!! next-chan)]
+        (is (= true resp) "get-next-list returns true")
+        (is (instance? io.orchestrate.client.KvList result)
+            "a KvList is written to the success chan")))))
+
 
 (deftest kv-post
-  (let [res-chan  (async/chan)]
+  (let [res-chan  (tchan)]
     (kv/post h/client h/col h/data res-chan)
     (let [result (async/<!! res-chan)]
       (is (instance? io.orchestrate.client.KvObject result)))))

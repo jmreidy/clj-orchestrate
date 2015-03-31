@@ -125,6 +125,17 @@ It's easy to list all data from a collection.
  of KV objects should be populated with the Object values. It defaults to true.
 
  The error channel is not required but is strongly recommended.
+ 
+ If a list result has more data, you can easily get the next "page" of results with the
+ `get-next-list` function. Just supply the first list result, and `get-next-list` will
+ get the next set of results from the initial query. For example:
+ 
+ ```clojure
+ (kv/get-next-list list sc ec)
+ ```
+ 
+ `get-next-list` returns a boolean indicating whether the supplied list has a next page;
+ the actual results of the query are written to the supplied success channel.
 
 
 ###Storing Data 

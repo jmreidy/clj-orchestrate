@@ -2,7 +2,7 @@
   (:require [clj-orchestrate.util :as util :refer [make-listener]]
             [clojure.walk :refer [stringify-keys]]
             [cheshire.core :as cheshire])
-  (:import (io.orchestrate.client Aggregate Range TimeInterval)
+  (:import (io.orchestrate.client Aggregate Range TimeInterval KvList)
            (io.orchestrate.client.jsonpatch JsonPatch JsonPatchOp)))
 
 
@@ -34,6 +34,17 @@
             (.on handler)))))
   ([client collection succ-chan err-chan]
     (list client collection {:succ-chan succ-chan :err-chan err-chan})))
+
+(defn get-next-list
+  "Get the next page in a list"
+  ([list & chans]
+   (let [next? (.hasNext list)]
+     (if next?
+       (-> (.getNext list)
+           (.on (make-listener (first chans) (second chans)))
+           (.get)))
+     next?)))
+
 
 
 (defn post
@@ -78,7 +89,6 @@
   [client collection key value {:keys [match-ref succ-chan err-chan]}]
   (let [handler (make-listener succ-chan err-chan)
         value (cheshire/generate-string value)]
-    (println value)
     (-> client
         (.kv collection key)
         (#(if match-ref (.ifMatch % match-ref) %))

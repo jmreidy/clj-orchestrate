@@ -21,3 +21,9 @@
       (.get))))
 
 (def data {:foo "bar" :baz [1 2]})
+
+(defn run [fn]
+  (let [sc (async/chan)]
+    (fn sc)
+    sc))
+
