@@ -21,6 +21,30 @@
 
       :else obj)))
 
+(defprotocol PageableList
+  (getNext [this])
+  (hasNext [this])
+  (getEvents [this])
+  (getResults [this])
+  (getRelatedObjects [this]))
+
+(defprotocol OrchVO
+  (getValue [this]))
+
+(deftype NilResult []
+  OrchVO
+  (getValue [_] nil)
+  PageableList
+  (getNext [_] nil)
+  (hasNext [_] false)
+  (getEvents [_] '())
+  (getResults [_] '())
+  (getRelatedObjects [_] '())
+  KvMetadata
+  (getCollection [_] nil)
+  (getKey [_] nil)
+  (getRef [_] nil))
+
 (defn- kv->map
   "Convert a KV Object to a hashmap"
   [^KvObject obj]
@@ -48,6 +72,8 @@
 
 ;Parse Results
 (defmulti get-results class)
+
+(defmethod get-results NilResult [r] (.getResults r))
 
 (defmethod get-results KvList [kv-results]
   (map kv->map (.getResults kv-results)))
@@ -94,6 +120,8 @@
 ;Parse Metadata
 (defmulti get-meta class)
 
+(defmethod get-meta NilResult [_] {})
+
 (defmethod get-meta Event [^Event event]
   (ev->meta event))
 
@@ -109,6 +137,8 @@
 (defmulti get-results-with-meta class)
 
 (defn- result-mapper [el] {:data (get-results el) :meta (get-meta el)})
+
+(defmethod get-results-with-meta NilResult [_] {:data '() :meta {}})
 
 (defmethod get-results-with-meta KvList [kv-results]
   (map result-mapper (.getResults kv-results)))
@@ -146,9 +176,12 @@
             (. JsonPatch builder)
             patch)))
 
+
 (defn make-listener
   ([succ-chan err-chan]
     (reify
       ResponseListener
-      (onSuccess [this res] (if-not (nil? succ-chan) (put! succ-chan res)))
-      (onFailure [this err] (if-not (nil? err-chan) (put! err-chan err))))))
+      (onSuccess [this res]
+        (if-not (nil? succ-chan) (put! succ-chan (or res (->NilResult)))))
+      (onFailure [this err]
+        (if-not (nil? err-chan) (put! err-chan err))))))
