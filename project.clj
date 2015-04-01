@@ -1,4 +1,4 @@
-(defproject jmreidy/clj-orchestrate "0.2.1"
+(defproject jmreidy/clj-orchestrate "0.2.2"
   :author "Justin Reidy <http://rzrsharp.net>"
   :description "Clojure Orchestrate.io client"
   :url "https://github.com/jmreidy/clj-orchestrate"
